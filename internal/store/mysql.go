@@ -14,7 +14,7 @@ func Init(dsn string) error {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		SkipDefaultTransaction: true,
-		TranslateError: true,
+		TranslateError:         true,
 	})
 
 	if err != nil {
@@ -33,7 +33,7 @@ func Init(dsn string) error {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
-	if err := db.AutoMigrate(&model.Task{},&model.TaskResult{}); err != nil {
+	if err := db.AutoMigrate(&model.Task{}, &model.TaskResult{}); err != nil {
 		return err
 	}
 	DB = db

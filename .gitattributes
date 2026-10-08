@@ -1,0 +1,16 @@
+# 默认：仓库里统一存 LF，检出时按平台自动转换
+* text=auto
+
+# 显式声明必须用 LF 的文件（这些会在 Linux 上被执行）
+*.go       text eol=lf
+*.yaml     text eol=lf
+*.yml      text eol=lf
+*.sh       text eol=lf
+Dockerfile text eol=lf
+Makefile   text eol=lf
+
+# 二进制文件：禁止任何换行符转换
+*.tar  binary
+*.exe  binary
+*.png  binary
+*.jpg  binary

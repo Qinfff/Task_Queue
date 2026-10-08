@@ -16,7 +16,7 @@ type taskStatusCollector struct {
 	desc *prometheus.Desc
 }
 
-func newTaskStatusCollector() *taskStatusCollector{
+func newTaskStatusCollector() *taskStatusCollector {
 	return &taskStatusCollector{
 		desc: prometheus.NewDesc(
 			"taskqueue_tasks",
@@ -27,29 +27,28 @@ func newTaskStatusCollector() *taskStatusCollector{
 	}
 }
 
-func (c *taskStatusCollector)Describe(ch chan<- *prometheus.Desc){
+func (c *taskStatusCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.desc
 }
 
-
-func (c *taskStatusCollector)Collect(ch chan<- prometheus.Metric){
-	var rows []struct{
+func (c *taskStatusCollector) Collect(ch chan<- prometheus.Metric) {
+	var rows []struct {
 		Status string
-		Total int64
+		Total  int64
 	}
 
 	if err := store.DB.Model(&model.Task{}).Select("status,count(*) as total").Group(
-		"status").Scan(&rows).Error;err!=nil{
-			log.Printf("collect taskqueue_tasks failed :%v",err)
-			return
-		}
-	for _, r := range rows{
-		ch <- prometheus.MustNewConstMetric(c.desc,prometheus.GaugeValue,float64(r.Total),r.Status)
+		"status").Scan(&rows).Error; err != nil {
+		log.Printf("collect taskqueue_tasks failed :%v", err)
+		return
+	}
+	for _, r := range rows {
+		ch <- prometheus.MustNewConstMetric(c.desc, prometheus.GaugeValue, float64(r.Total), r.Status)
 
 	}
 }
 
-func registerBusinessMetrics(){
+func registerBusinessMetrics() {
 	prometheus.MustRegister(newTaskStatusCollector())
 
 	prometheus.MustRegister(prometheus.NewGaugeFunc(

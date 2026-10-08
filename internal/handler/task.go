@@ -18,11 +18,10 @@ type createTaskRequest struct {
 	Payload string `json:"payload"`
 }
 
-
 func CreateTask(c *gin.Context) {
 	var req createTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("bind request failed :%v",err)
+		log.Printf("bind request failed :%v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -41,8 +40,8 @@ func CreateTask(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 
-	if err := queue.Push(ctx,task.ID);err !=nil{
-		log.Printf("taskid: %d redis push failed",task.ID)
+	if err := queue.Push(ctx, task.ID); err != nil {
+		log.Printf("taskid: %d redis push failed", task.ID)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{

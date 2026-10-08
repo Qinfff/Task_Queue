@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"taskqueue/internal/metrics"
 	"syscall"
 	"taskqueue/internal/handler"
+	"taskqueue/internal/metrics"
 	"taskqueue/internal/queue"
 	"time"
 
@@ -35,16 +35,16 @@ func main() {
 	}
 	//连redis
 	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr == ""{
+	if redisAddr == "" {
 		log.Fatal("REDIS_ADDR is empty")
 	}
-	if err := queue.Init(redisAddr);err != nil{
-		log.Fatalf("init redis err :%v",err)
+	if err := queue.Init(redisAddr); err != nil {
+		log.Fatalf("init redis err :%v", err)
 	}
 
 	//设置metrics
 	metricsAddr := os.Getenv("METRICS_ADDR")
-	if metricsAddr == ""{
+	if metricsAddr == "" {
 		metricsAddr = ":9090"
 	}
 	registerBusinessMetrics()
@@ -60,17 +60,17 @@ func main() {
 	r.GET("/health", handler.Health)
 	r.POST("/tasks", handler.CreateTask)
 	r.GET("/tasks/:id", handler.GetTask)
-	r.GET("/ready",handler.Ready)
+	r.GET("/ready", handler.Ready)
 
 	//优雅关闭
-	ctx, stop := signal.NotifyContext(context.Background(),os.Interrupt,syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	srv := &http.Server{Addr: addr,Handler: r}
+	srv := &http.Server{Addr: addr, Handler: r}
 
-	go func(){
-		if err := srv.ListenAndServe();err != nil && !errors.Is(err, http.ErrServerClosed){
-			log.Fatalf("listen: %v",err)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("listen: %v", err)
 		}
 
 	}()
@@ -79,11 +79,11 @@ func main() {
 	stop()
 	log.Println("shutdown signal received")
 
-	shutCtx, cancel := context.WithTimeout(context.Background(),10*time.Second)
+	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(shutCtx);err != nil{
-		log.Printf("shutdown forced: %v",err)
+	if err := srv.Shutdown(shutCtx); err != nil {
+		log.Printf("shutdown forced: %v", err)
 		srv.Close()
 
 	}
