@@ -118,6 +118,15 @@ jobs:
     needs: image
     runs-on: [self-hosted, laptop]
 
+    # 这台 runner 必须经本地代理才能访问 github.com（直连超时）。
+    # 放在 job 级而不是 step 级 —— 所有步骤（含 actions/checkout 内部的 git）都要用。
+    # 注意：这是本机专属配置，port 7897 是 Clash/Mihomo 的混合端口。
+    env:
+      HTTPS_PROXY: http://127.0.0.1:7897
+      HTTP_PROXY: http://127.0.0.1:7897
+      https_proxy: http://127.0.0.1:7897
+      http_proxy: http://127.0.0.1:7897
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
