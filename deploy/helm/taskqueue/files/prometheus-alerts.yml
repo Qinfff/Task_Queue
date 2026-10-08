@@ -1,0 +1,38 @@
+groups:
+  - name: taskqueue
+    rules:
+      - alert: QueueBacklogHigh
+        expr: taskqueue_queue_length > 100
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "任务队列积压"
+          description: "队列长度已超过 100 持续 30 秒，当前 {{ $value }} 个"
+
+      - alert: TaskFailureRateHigh
+        expr: sum(rate(taskqueue_tasks_processed_total{result="failed"}[2m])) / sum(rate(taskqueue_tasks_processed_total[2m])) > 0.1
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "任务失败率超过 10%"
+          description: "当前失败率 {{ $value | humanizePercentage }}"
+
+      - alert: WorkerStalled
+        expr: taskqueue_queue_length > 50 and sum(rate(taskqueue_tasks_processed_total[1m])) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "队列有积压但 worker 完全没有处理"
+          description: "队列还有 {{ $value }} 个任务，但处理速率为 0，可能 worker 卡死或所有副本异常"
+
+      - alert: ScrapeTargetDown
+        expr: up{job="taskqueue"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "抓取目标挂了"
+          description: "Pod {{ $labels.pod }} 的 /metrics 抓不到了"

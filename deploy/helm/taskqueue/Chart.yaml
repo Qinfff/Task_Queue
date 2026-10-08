@@ -1,0 +1,12 @@
+apiVersion: v2
+name: taskqueue
+description: A distributed task queue built with Go, Redis, MySQL, and Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - go
+  - redis
+  - mysql
+  - queue
+  - worker

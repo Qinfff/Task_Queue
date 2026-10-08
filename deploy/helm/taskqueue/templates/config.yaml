@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  labels:
+    app: taskqueue
+data:
+  REDIS_ADDR: "redis:6379"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+  labels:
+    app: taskqueue
+type: Opaque
+stringData:
+  MYSQL_DSN: "{{ .Values.credentials.mysqlRootPassword }}:{{ .Values.credentials.mysqlRootPassword }}@tcp(mysql:3306)/taskqueue?charset=utf8mb4&parseTime=True&loc=Local"
+  REDIS_ADDR: "redis:6379"

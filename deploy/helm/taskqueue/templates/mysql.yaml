@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: {{ .Values.credentials.mysqlRootPassword | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: mysql-config }
+data:
+  MYSQL_DATABASE: taskqueue
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: mysql-data }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: "{{ .Values.middleware.mysqlStorage }}" }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: mysql }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: mysql }
+  template:
+    metadata:
+      labels: { app: mysql }
+    spec:
+      containers:
+        - name: mysql
+          image: {{ .Values.middleware.mysqlImage }}
+          envFrom:
+            - secretRef: { name: mysql-secret }
+            - configMapRef: { name: mysql-config }
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          startupProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$MYSQL_ROOT_PASSWORD"]
+            periodSeconds: 5
+            failureThreshold: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mysql-data
+---
+apiVersion: v1
+kind: Service
+metadata: { name: mysql }
+spec:
+  selector: { app: mysql }
+  ports:
+    - port: 3306
+      targetPort: 3306

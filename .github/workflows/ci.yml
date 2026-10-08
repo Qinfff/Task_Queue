@@ -85,20 +85,21 @@ jobs:
     runs-on: [self-hosted, laptop]
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
       - name: Probe environment
         shell: powershell
         run: |
+          Write-Host "helm path:"
+          (Get-Command helm -ErrorAction SilentlyContinue).Source
+          helm version --short
           Write-Host "kubectl path:"
           (Get-Command kubectl -ErrorAction SilentlyContinue).Source
-          kubectl version --client
 
-      - name: Update image and wait rollout
+      - name: Helm upgrade
         shell: powershell
         run: |
-          $image = "ghcr.io/qinfff/task_queue-api:${{ github.sha }}"
-          Write-Host "target image: $image"
-          kubectl set image deploy/worker "worker=$image"
-          kubectl set image deploy/api "api=$image"
-          kubectl rollout status deploy/worker --timeout=180s
-          kubectl rollout status deploy/api --timeout=180s
-          Write-Host "deploy completed"
+          helm upgrade taskqueue ./deploy/helm/taskqueue --set image.tag=${{ github.sha }} --set-string credentials.grafanaAdminPassword=${{ secrets.GRAFANA_ADMIN_PASSWORD }} --wait --timeout 5m
+          helm status taskqueue
+          helm list
