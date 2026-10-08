@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: task_queue-api:v9
+          image: ghcr.io/qinfff/task_queue-api:16599c94cebeec512e374598d62895cdd3ad1c42
           imagePullPolicy: IfNotPresent
           command: ["/app/worker"]
           ports:

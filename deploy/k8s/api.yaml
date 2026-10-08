@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: task_queue-api:v9
+          image: ghcr.io/qinfff/task_queue-api:16599c94cebeec512e374598d62895cdd3ad1c42
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
