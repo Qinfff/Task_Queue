@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
           cache: true
 
       - name: Check gofmt
@@ -78,3 +78,20 @@ jobs:
             ghcr.io/qinfff/task_queue-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Local Cluster
+    needs: image
+    runs-on: [self-hosted, laptop]
+
+    steps:
+      - name: Update image and wait rollout
+        shell: pwsh
+        run: |
+          $image = "ghcr.io/qinfff/task_queue-api:${{ github.sha }}"
+          Write-Host "目标镜像: $image"
+          kubectl set image deploy/worker "worker=$image"
+          kubectl set image deploy/api "api=$image"
+          kubectl rollout status deploy/worker --timeout=180s
+          kubectl rollout status deploy/api --timeout=180s
+          Write-Host "部署完成"
