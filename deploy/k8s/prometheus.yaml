@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - /etc/prometheus/alerts.yml
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: taskqueue
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_metrics]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: "$1:9090"
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+  alerts.yml: |
+    groups:
+      - name: taskqueue
+        rules:
+          - alert: QueueBacklogHigh
+            expr: taskqueue_queue_length > 100
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "任务队列积压"
+              description: "队列长度已超过 100 持续 30 秒，当前 {{ $value }} 个"
+
+          - alert: TaskFailureRateHigh
+            expr: sum(rate(taskqueue_tasks_processed_total{result="failed"}[2m])) / sum(rate(taskqueue_tasks_processed_total[2m])) > 0.1
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "任务失败率超过 10%"
+              description: "当前失败率 {{ $value | humanizePercentage }}"
+
+          - alert: WorkerStalled
+            expr: taskqueue_queue_length > 50 and sum(rate(taskqueue_tasks_processed_total[1m])) == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "队列有积压但 worker 完全没有处理"
+              description: "队列还有 {{ $value }} 个任务，但处理速率为 0，可能 worker 卡死或所有副本异常"
+
+          - alert: ScrapeTargetDown
+            expr: up{job="taskqueue"} == 0
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "抓取目标挂了"
+              description: "Pod {{ $labels.pod }} 的 /metrics 抓不到了"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: prometheus }
+  template:
+    metadata:
+      labels: { app: prometheus }
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.53.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=6h"
+            - "--web.enable-lifecycle"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+spec:
+  selector: { app: prometheus }
+  ports:
+    - port: 9090
+      targetPort: 9090

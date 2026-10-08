@@ -1,0 +1,6 @@
+/server
+/api
+*.exe
+.env
+*.local.yaml
+*.tar

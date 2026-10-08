@@ -1,0 +1,34 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: worker
+spec:
+  # 副本数由 HPA (worker-hpa.yaml) 接管，这里写 1 只是初始值
+  replicas: 1
+  selector:
+    matchLabels: { app: worker }
+  template:
+    metadata:
+      labels: 
+        app: worker
+        metrics: "true"
+    spec:
+      containers:
+        - name: worker
+          image: task_queue-api:v9
+          imagePullPolicy: IfNotPresent
+          command: ["/app/worker"]
+          ports:
+            - containerPort: 9090
+          envFrom:
+            - configMapRef: { name: app-config }
+            - secretRef: { name: app-secret }
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits: 
+              cpu: "500m"
+              memory: "128Mi"
+          
