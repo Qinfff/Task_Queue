@@ -124,7 +124,7 @@ func execute(ctx context.Context, task *model.Task) error {
 	return nil
 }
 
-//退避算法
+// 退避算法
 func backoff(retires int) time.Duration {
 	if retires > 6 {
 		retires = 6
