@@ -1,0 +1,7 @@
+.git
+.gitignore
+*.md
+taskqueue-operator.exe
+taskqueue-operator.exe~
+*.log
+Dockerfile

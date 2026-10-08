@@ -1,0 +1,31 @@
+apiVersion: queue.example.com/v1alpha1
+kind: TaskQueue
+metadata:
+  name: taskqueue
+  namespace: default
+spec:
+  image:
+    repository: ghcr.io/qinfff/task_queue-api
+    tag: 16599c94cebeec512e374598d62895cdd3ad1c42
+    pullPolicy: IfNotPresent
+  worker:
+    replicaCount: 2
+    metricsPort: 9090
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  api:
+    replicaCount: 1
+    servicePort: 8080
+    metricsPort: 9090
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi

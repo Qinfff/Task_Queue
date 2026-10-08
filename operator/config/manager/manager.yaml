@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskqueue-operator
+  namespace: default
+  labels:
+    app: taskqueue-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskqueue-operator
+  template:
+    metadata:
+      labels:
+        app: taskqueue-operator
+    spec:
+      serviceAccountName: taskqueue-operator
+      containers:
+        - name: manager
+          image: taskqueue-operator:v1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--leader-elect"
+            - "--metrics-bind-address=:8081"
+            - "--health-probe-bind-address=:8082"
+          ports:
+            - name: metrics
+              containerPort: 8081
+            - name: health
+              containerPort: 8082
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8082
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

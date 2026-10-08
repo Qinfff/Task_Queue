@@ -45,6 +45,40 @@ jobs:
       - name: Test with race detector
         run: go test -race -v ./...
 
+  operator:
+    name: Operator Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "operator/go.mod"
+          cache: true
+          cache-dependency-path: operator/go.sum
+
+      - name: Check gofmt
+        working-directory: operator
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::operator gofmt 检查失败:"
+            echo "$unformatted"
+            exit 1
+          fi
+          echo "operator gofmt 检查通过"
+
+      - name: Vet
+        working-directory: operator
+        run: go vet ./...
+
+      - name: Build
+        working-directory: operator
+        run: go build -v ./...
+
   image:
     name: Build & Push Image
     needs: verify
