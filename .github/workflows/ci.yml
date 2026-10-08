@@ -85,13 +85,20 @@ jobs:
     runs-on: [self-hosted, laptop]
 
     steps:
+      - name: Probe environment
+        shell: powershell
+        run: |
+          Write-Host "kubectl path:"
+          (Get-Command kubectl -ErrorAction SilentlyContinue).Source
+          kubectl version --client
+
       - name: Update image and wait rollout
-        shell: pwsh
+        shell: powershell
         run: |
           $image = "ghcr.io/qinfff/task_queue-api:${{ github.sha }}"
-          Write-Host "目标镜像: $image"
+          Write-Host "target image: $image"
           kubectl set image deploy/worker "worker=$image"
           kubectl set image deploy/api "api=$image"
           kubectl rollout status deploy/worker --timeout=180s
           kubectl rollout status deploy/api --timeout=180s
-          Write-Host "部署完成"
+          Write-Host "deploy completed"
